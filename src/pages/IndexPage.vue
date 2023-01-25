@@ -3,7 +3,17 @@
     <div class="audio-container">
       <div class="row q-ma-md">
         <div class="col-12">
-          <div id="waveform"></div>
+          <div>
+            <q-list class="list" bordered>
+              <q-item v-for="song in songs" :key="song.id" @click="isplaying === false ? play(song.src) : stopSound()"
+                clickable v-ripple>
+                <q-item-section avatar>
+                  <q-icon color="primary" name="headphones" />
+                </q-item-section>
+                <q-item-section>{{ song.title }}</q-item-section>
+              </q-item>
+            </q-list>
+          </div>
         </div>
       </div>
     </div>
@@ -19,30 +29,22 @@
       </div>
     </div>
   </q-page>
+
 </template>
 
 <script setup>
 import { ref, computed, getCurrentInstance } from 'vue'
-import { useQuasar } from 'quasar'
-import { date } from 'quasar'
 import { useCounterStore } from 'stores/example-store.js'
 
 window.app = getCurrentInstance()
-const $q = useQuasar()
 const store = useCounterStore()
 const audio = ref(null)
 const currentIndex = ref(0)
 const isplaying = ref(false)
-const playlist = store.playList
-
-$q.localStorage.set(audio)
-const value = $q.localStorage.getItem(audio)
-
-$q.sessionStorage.set(audio)
-const otherValue = $q.sessionStorage.getItem(audio)
+const songs = store.playList
 
 const currentTrack = computed(() => {
-  return playlist[currentIndex.value]
+  return songs[currentIndex.value]
 })
 
 function playSound() {
@@ -57,11 +59,11 @@ function stopSound() {
 
 function next() {
   currentIndex.value++
-  if (currentIndex.value > playlist.length - 1) {
+  if (currentIndex.value > songs.length - 1) {
     currentIndex.value = 0
   }
   stopSound()
-  currentTrack.value = playlist[currentIndex]
+  currentTrack.value = songs[currentIndex]
   audio.value = new Audio(currentTrack.value.src)
   audio.value.play(currentTrack)
   isplaying.value = true
@@ -70,19 +72,30 @@ function next() {
 function back() {
   currentIndex.value--
   if (currentIndex.value < 0) {
-    currentIndex.value = playlist.length - 1
+    currentIndex.value = songs.length - 1
   }
   stopSound()
-  currentTrack.value = playlist[currentIndex]
+  currentTrack.value = songs[currentIndex]
   audio.value = new Audio(currentTrack.value.src)
   audio.value.play(currentTrack)
   isplaying.value = true
 }
+
+function play(src) {
+  audio.value = new Audio(src)
+  audio.value.play()
+  isplaying.value = true
+}
+
 </script>
 
 <style>
 .controls {
   background-color: white;
+}
+
+.list {
+  border-color: black;
 }
 
 .audio-container {
@@ -91,6 +104,6 @@ function back() {
   left: 0;
   height: 100%;
   width: 100%;
-  background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3))
+  background: linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1))
 }
 </style>
