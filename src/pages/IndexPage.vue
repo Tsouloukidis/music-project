@@ -5,12 +5,23 @@
         <div class="col-12">
           <div>
             <q-list class="list" bordered>
-              <q-item v-for="song in songs" :key="song.id" @click="isplaying === false ? play(song.src) : stopSound()"
-                clickable v-ripple>
+              <q-item v-for="(song, index) in songs" :key="song.id" clickable v-ripple
+                @click="isplaying === false ? (play(song.src), currentIndex = index) : stopSound()">
                 <q-item-section avatar>
                   <q-icon color="primary" name="headphones" />
                 </q-item-section>
                 <q-item-section>{{ song.title }}</q-item-section>
+                <q-item-section>
+                  <q-icon v-if="currentIndex === index && isplaying === true" color="primary" name="play_arrow" />
+                </q-item-section>
+                <q-item-section v-if="currentIndex === index && isplaying === true">{{ timeLabel }}</q-item-section>
+                <q-item-section>
+                  <q-icon color="primary" />
+                </q-item-section>
+                <q-item-section>
+                  <q-slider v-model="currentTime" :min="0" :max="duration" :step="1" color="primary" width="100px" v-if="currentIndex === index && isplaying === true"
+                    @change="newtime()" @pan="newtime()" />
+                    </q-item-section>
               </q-item>
             </q-list>
           </div>
@@ -33,7 +44,7 @@
 </template>
 
 <script setup>
-import { ref, computed, getCurrentInstance } from 'vue'
+import { ref, getCurrentInstance, onMounted } from 'vue'
 import { useCounterStore } from 'stores/example-store.js'
 
 window.app = getCurrentInstance()
@@ -42,50 +53,85 @@ const audio = ref(null)
 const currentIndex = ref(0)
 const isplaying = ref(false)
 const songs = store.playList
-
-const currentTrack = computed(() => {
-  return songs[currentIndex.value]
-})
+const duration = ref(0)
+const currentTime = ref(0)
+const timeLabel = ref('00:00:00')
+const thisSource = ref('')
 
 function playSound() {
-  audio.value = new Audio(currentTrack.value.src)
+  audio.value = new Audio(songs[currentIndex.value].src)
+  newtime()
+  audio.value.addEventListener('timeupdate', function () {
+      currentTime.value = audio.value.currentTime
+      duration.value = audio.value.duration
+      const hr = Math.floor(currentTime.value / 3600)
+      const min = Math.floor((currentTime.value - (hr * 3600)) / 60)
+      const sec = Math.floor(currentTime.value - (hr * 3600) - (min * 60))
+      timeLabel.value = `${hr.toString()
+        .padStart(2, '0')}:${min.toString()
+          .padStart(2, '0')}:${sec.toString()
+            .padStart(2, '0')}`
+    })
   audio.value.play()
   isplaying.value = true
 }
 function stopSound() {
   audio.value.pause()
+  newtime()
   isplaying.value = false
 }
 
 function next() {
-  currentIndex.value++
-  if (currentIndex.value > songs.length - 1) {
+  if (currentIndex.value === songs.length - 1) {
     currentIndex.value = 0
+  } else {
+    currentIndex.value++
   }
   stopSound()
-  currentTrack.value = songs[currentIndex]
-  audio.value = new Audio(currentTrack.value.src)
-  audio.value.play(currentTrack)
+  play(songs[currentIndex.value].src)
   isplaying.value = true
 }
 
 function back() {
-  currentIndex.value--
-  if (currentIndex.value < 0) {
-    currentIndex.value = songs.length - 1
+  if (currentIndex.value === 0) {
+    currentIndex.value = songs.length -1
+  } else {
+    currentIndex.value--
   }
   stopSound()
-  currentTrack.value = songs[currentIndex]
-  audio.value = new Audio(currentTrack.value.src)
-  audio.value.play(currentTrack)
+  play(songs[currentIndex.value].src)
   isplaying.value = true
 }
 
 function play(src) {
-  audio.value = new Audio(src)
-  audio.value.play()
-  isplaying.value = true
+  if (audio.value.paused && thisSource.value !== src) {
+    thisSource.value = src
+    audio.value = new Audio(src)
+    audio.value.addEventListener('timeupdate', function () {
+      currentTime.value = audio.value.currentTime
+      duration.value = audio.value.duration
+      const hr = Math.floor(currentTime.value / 3600)
+      const min = Math.floor((currentTime.value - (hr * 3600)) / 60)
+      const sec = Math.floor(currentTime.value - (hr * 3600) - (min * 60))
+      timeLabel.value = `${hr.toString()
+        .padStart(2, '0')}:${min.toString()
+          .padStart(2, '0')}:${sec.toString()
+            .padStart(2, '0')}`
+    })
+    audio.value.play()
+    isplaying.value = true
+  } else {
+    audio.value.play()
+    isplaying.value = true
+  }
 }
+function newtime() {
+  audio.value.currentTime = currentTime.value
+}
+
+onMounted(() => {
+  audio.value = new Audio(songs.src)
+})
 
 </script>
 
