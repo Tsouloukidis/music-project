@@ -1,6 +1,6 @@
 {
   "appId": "org.capacitor.quasar.app",
-  "appName": "Quasar App",
+  "appName": "Z Player",
   "bundledWebRuntime": false,
   "npmClient": "yarn",
   "webDir": "www"
